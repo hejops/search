@@ -74,23 +74,14 @@ pub mod engine {
     pub fn build_engines(contents: String) -> Result<Vec<SearchEngine>, String> {
         let mut engines = vec![];
 
-        for line in contents.lines() {
-            let mut line_iter = line
-                .split('\t')
-                .map(|s| s.trim().to_string())
-                .filter(|line| !line.is_empty() && !line.starts_with('#'));
-            let name = match line_iter.next() {
-                Some(name) => name,
-                None => continue,
-            };
-            let url = match line_iter.next() {
-                Some(url) => url,
-                None => continue,
-            };
-
-            let engine = SearchEngine { name, url };
-
-            engines.push(engine)
+        for line in contents
+            .lines()
+            .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        {
+            let mut parts = line.split('\t').map(|s| s.to_string());
+            let name = parts.next().ok_or(format!("line has no name: {line}"))?;
+            let url = parts.next().ok_or(format!("line has no url: {line}"))?;
+            engines.push(SearchEngine { name, url });
         }
 
         // dbg!("{:#?}", engines);
