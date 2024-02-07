@@ -63,7 +63,7 @@ pub mod engine {
                 true => self.url.replace("%s", query),
                 false => self.url.to_string() + query,
             };
-            print!("{}", url);
+            // print!("{}", url);
 
             let _ = url::Url::parse(&self.url);
             Ok(url.to_string())
@@ -102,5 +102,20 @@ pub mod engine {
     /// match a SearchEngine by name, returning None if not found
     pub fn select_engine(engines: Vec<SearchEngine>, name: &str) -> Option<SearchEngine> {
         engines.into_iter().find(|engine| engine.name == name)
+    }
+
+    pub fn get_input(v: &str) -> Option<String> {
+        println!("Specify {v}: ");
+        let mut result = String::new();
+        let _ = io::stdin().read_line(&mut result);
+        Some(result.trim().to_string())
+    }
+
+    pub fn list_engines(engines: &[SearchEngine]) -> Option<String> {
+        for e in engines.iter().map(|e| &e.name) {
+            print!("{} ", e);
+        }
+        println!();
+        get_input("engine")
     }
 }
