@@ -1,4 +1,4 @@
-//! Simple command-line tool to perform web searches on the command-line
+//! Simple command-line tool to perform web searches
 //!
 //! Usage:
 //! ```sh
@@ -20,7 +20,7 @@
 //! rust_errors    https://doc.rust-lang.org/error_codes/E%s.html
 //! ```
 //!
-//! `xdg-open` will be called on resulting URL.
+//! `xdg-open` will be called on the resulting URL.
 
 pub const ENGINES_FILE: &str = "~/.config/search_engines";
 
