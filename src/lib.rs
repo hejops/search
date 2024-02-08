@@ -99,7 +99,11 @@ pub mod engine {
         println!("Specify {v}: ");
         let mut result = String::new();
         let _ = io::stdin().read_line(&mut result);
-        Some(result.trim().to_string())
+        result = result.trim().to_string();
+        match !result.is_empty() {
+            true => Some(result),
+            false => None,
+        }
     }
 
     pub fn list_engines(engines: &[SearchEngine]) -> Option<String> {

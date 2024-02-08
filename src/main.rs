@@ -24,17 +24,13 @@ impl SearchArgs {
     fn parse<'a>(args: &'a mut Args, engines: &'a [SearchEngine]) -> Result<SearchArgs, &'a str> {
         args.next();
 
-        // let engine_name = args.next().ok_or_else(|| list_engines(engines))?;
-
         let engine_name = match args.next() {
             Some(n) => n,
             None => list_engines(engines).ok_or("No valid engine specified")?,
         };
 
-        // let query = args.next().ok_or("No query specified!")?;
-
         let query = match args.next() {
-            Some(n) => n,
+            Some(q) => q,
             None => get_input("query").ok_or("No valid query specified")?,
         };
 
@@ -58,6 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         search::print_usage(e);
         std::process::exit(1);
     });
+    // println!("{:?}", args);
 
     let engine = select_engine(engines, &args.engine_name)
         .ok_or(format!("engine not found: {}", &args.engine_name))?;
