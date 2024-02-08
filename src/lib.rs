@@ -42,6 +42,7 @@ pub mod engine {
 
     use std::fs::read_to_string;
     use std::io;
+    use std::ops::Not;
 
     /// read hardcoded ENGINES_FILE file into string
     pub fn read_engines() -> Result<String, io::Error> {
@@ -99,11 +100,7 @@ pub mod engine {
         println!("Specify {v}: ");
         let mut result = String::new();
         let _ = io::stdin().read_line(&mut result);
-        result = result.trim().to_string();
-        match !result.is_empty() {
-            true => Some(result),
-            false => None,
-        }
+        result.trim().is_empty().not().then_some(result)
     }
 
     pub fn list_engines(engines: &[SearchEngine]) -> Option<String> {
