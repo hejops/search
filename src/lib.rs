@@ -98,7 +98,8 @@ pub fn get_input(v: &str) -> Option<String> {
     println!("Specify {v}: ");
     let mut result = String::new();
     let _ = io::stdin().read_line(&mut result);
-    result.trim().is_empty().not().then_some(result)
+    result = result.trim().to_string();
+    result.is_empty().not().then_some(result)
 }
 
 pub fn launch(url: &str) {
