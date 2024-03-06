@@ -5,10 +5,10 @@
 //! search <engine> <query>
 //! ```
 //!
-//! A file at `~/.config/search_engines` is required. This file must be tab-separated. Empty lines
-//! and commented lines (beginning with `#`) are ignored. All other lines must possess exactly two
-//! fields, containing the name of a search engine, and a base URL to which a query will be
-//! appended:
+//! A file at `~/.config/search_engines` is required. This file must be
+//! tab-separated. Empty lines and commented lines (beginning with `#`) are
+//! ignored. All other lines must possess exactly two fields, containing the
+//! name of a search engine, and a base URL to which a query will be appended:
 //!
 //! ```text
 //! ddg  https://duckduckgo.com/?t=ffab&q=
@@ -22,11 +22,20 @@
 //!
 //! `xdg-open` will be called on the resulting URL.
 
+extern crate termion;
+
+pub mod engines;
 use std::env::Args;
 use std::io;
+use std::io::Stdout;
+use std::io::Write;
 use std::ops::Not;
 
-pub const ENGINES_FILE: &str = "~/.config/search_engines";
+use termion::raw::RawTerminal;
+
+use crate::engines::Engines;
+
+// https://github.com/redox-os/termion/blob/master/examples/keys.rs
 
 pub fn print_usage(err: &str) {
     println!(
@@ -35,8 +44,6 @@ pub fn print_usage(err: &str) {
 
 Usage:
     search <engine> <query>
-
-Requires: {ENGINES_FILE}\
 ",
     );
     // std::process::exit(1);
@@ -45,6 +52,7 @@ Requires: {ENGINES_FILE}\
 #[derive(Debug)]
 pub struct SearchArgs {
     //{{{
+    // TODO: make fields private?
     pub engine_name: String, // spaces not allowed
     pub query: String,
 }
@@ -52,13 +60,13 @@ pub struct SearchArgs {
 impl SearchArgs {
     pub fn parse<'a>(
         args: &'a mut Args,
-        engines: &'a [SearchEngine],
+        engines: &Engines,
     ) -> Result<SearchArgs, &'a str> {
         args.next();
 
         let engine_name = match args.next() {
             Some(n) => n,
-            None => engines::list(engines).ok_or("No valid engine specified")?,
+            None => engines.fuzzy().ok_or("No valid engine specified")?,
         };
 
         let query = match args.next() {
@@ -69,31 +77,12 @@ impl SearchArgs {
         Ok(SearchArgs { engine_name, query })
     }
 }
+
 //}}}
 
-#[derive(Debug)]
-pub struct SearchEngine {
-    //{{{
-    name: String, // spaces not allowed
-    // TODO: add description field? at that point, json might be better
-    url: String,
-}
+pub fn launch(url: &str) { let _ = std::process::Command::new("xdg-open").arg(url).spawn(); }
 
-impl SearchEngine {
-    pub fn build_url(&self, query: &str) -> Result<String, url::ParseError> {
-        // let query = urlencoding::encode(query);
-        let url = match self.url.contains("%s") {
-            true => self.url.replace("%s", query),
-            false => self.url.to_string() + query,
-        };
-        // print!("{}", url);
-
-        let _ = url::Url::parse(&self.url);
-        Ok(url.to_string())
-    }
-}
-//}}}
-
+/// Read a single line of user input, returning None if input was empty
 pub fn get_input(v: &str) -> Option<String> {
     println!("Specify {v}: ");
     let mut result = String::new();
@@ -102,60 +91,13 @@ pub fn get_input(v: &str) -> Option<String> {
     result.is_empty().not().then_some(result)
 }
 
-pub fn launch(url: &str) {
-    // TODO: any vulnerabilities here?
-    // TODO: opener crate
-    let _ = std::process::Command::new("xdg-open").arg(url).spawn();
-}
-
-pub mod engines {
-
-    use crate::get_input;
-    use crate::SearchEngine;
-    use std::fs::read_to_string;
-    use std::io;
-
-    /// read hardcoded ENGINES_FILE file into string
-    pub fn read() -> Result<String, io::Error> {
-        let file = shellexpand::tilde(crate::ENGINES_FILE);
-        read_to_string(file.to_string())
-    }
-
-    /// parse each line to construct a vec of SearchEngines, ignoring commented and empty lines
-    pub fn build(contents: String) -> Result<Vec<SearchEngine>, String> {
-        let mut engines = vec![];
-
-        for line in contents
-            .lines()
-            .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        {
-            let mut parts = line.split('\t').map(|s| s.to_string());
-            let name = parts.next().ok_or(format!("line has no name: {line}"))?;
-            let url = parts.next().ok_or(format!("line has no url: {line}"))?;
-            engines.push(SearchEngine { name, url });
-        }
-
-        // dbg!("{:#?}", engines);
-        // panic!();
-
-        Ok(engines)
-    }
-
-    /// match a SearchEngine by name, returning None if not found
-    pub fn select(engines: Vec<SearchEngine>, name: &str) -> Option<SearchEngine> {
-        engines.into_iter().find(|engine| engine.name == name)
-    }
-
-    pub fn list(engines: &[SearchEngine]) -> Option<String> {
-        // TODO: simple fuzzy implementation (engine only): read chars (like python readchar) and
-        // accumulate into a string, allow backspace
-        // for each keypress, select engines that start with (or contain) the string, join them
-        // with space may require screen clear, or some overlay
-
-        for e in engines.iter().map(|e| &e.name) {
-            print!("{} ", e);
-        }
-        println!();
-        get_input("engine")
-    }
+/// Clear entire screen and place cursor at (1,1)
+fn clear(stdout: &mut RawTerminal<Stdout>) {
+    write!(
+        stdout,
+        "{}{}",
+        termion::clear::All,
+        termion::cursor::Goto(1, 1), // column, row
+    )
+    .unwrap();
 }
