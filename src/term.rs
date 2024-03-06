@@ -2,11 +2,13 @@ extern crate termion;
 
 use std::io::stdin;
 use std::io::stdout;
+use std::io::Stdout;
 use std::io::Write;
 
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use termion::raw::RawTerminal;
 
 // https://github.com/redox-os/termion/blob/master/examples/keys.rs
 
@@ -36,26 +38,35 @@ impl Engines {
     }
 }
 
-pub fn fuzzy() {
+/// Clear entire screen and place cursor at (1,1)
+fn clear(stdout: &mut RawTerminal<Stdout>) {
+    write!(
+        stdout,
+        "{}{}",
+        termion::clear::All,
+        termion::cursor::Goto(1, 1), // column, row
+    )
+    .unwrap();
+}
+
+pub fn fuzzy() -> Option<String> {
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
 
     let mut input = String::new();
     let engines = Engines::new();
 
-    write!(
-        stdout,
-        "{}{}{}",
-        termion::clear::All,
-        termion::cursor::Goto(1, 1), // column, row
-        input,
-    )
-    .unwrap();
     stdout.flush().unwrap();
 
     for c in stdin.keys() {
         match c.unwrap() {
-            Key::Char('\n') => break,
+            Key::Char('\n') => {
+                // i do this weird double owning because returning static str seems sus to me,
+                // but what do i know?
+                clear(&mut stdout);
+                let first = engines.filter(&input)?.first()?.to_owned();
+                return Some(first.to_owned());
+            }
             Key::Esc | Key::Char('q') => break,
             Key::Char(c) => input.push(c),
             Key::Backspace => {
@@ -65,16 +76,9 @@ pub fn fuzzy() {
             // Key::Right => println!("→"),
             _ => {}
         }
-        writeln!(
-            stdout,
-            "{}{}{}{}",
-            termion::clear::All,
-            termion::cursor::Hide,
-            termion::cursor::Goto(1, 1),
-            // termion::clear::CurrentLine,
-            input,
-        )
-        .unwrap();
+
+        clear(&mut stdout);
+        write!(stdout, "{}", input).unwrap();
 
         if let Some(avail) = engines.filter(&input) {
             // TODO: highlight text
@@ -84,4 +88,6 @@ pub fn fuzzy() {
         }
         stdout.flush().unwrap();
     }
+
+    None
 }
