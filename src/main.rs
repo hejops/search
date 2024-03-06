@@ -1,13 +1,16 @@
 use std::error::Error;
 
 use search::engines;
+use search::term;
 use search::SearchArgs;
 use search::ENGINES_FILE;
 
 // TODO: docopt
 // TODO: missing engine -> prompt / fuzzy
 // TODO: missing query -> prompt
-// TODO: search suggestions
+// TODO: search suggestions -- https://www.startpage.com/osuggestions?q=XXX
+
+// fn main() { term::fuzzy() }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let contents = match engines::read() {
