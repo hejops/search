@@ -10,22 +10,30 @@ use termion::raw::IntoRawMode;
 
 // https://github.com/redox-os/termion/blob/master/examples/keys.rs
 
-fn get_engines(input: &str) -> Option<String> {
-    let engines = ["a", "bb", "amazon", "bandcamp", "discogs"];
-    let avail: Vec<&str> = engines
-        .iter()
-        .filter(|e| e.starts_with(input))
-        .copied()
-        .collect();
-
-    if avail.is_empty() {
-        return None;
+struct Engines {
+    engines: Vec<String>,
+}
+impl Engines {
+    pub fn new() -> Self {
+        let mut engines = vec![];
+        for e in ["a", "bb", "amazon", "bandcamp", "discogs"] {
+            engines.push(String::from(e))
+        }
+        Engines { engines }
     }
+    pub fn filter(
+        &self,
+        input: &str,
+    ) -> Option<Vec<&str>> {
+        let mut avail = self
+            .engines
+            .iter()
+            .filter(|e| e.starts_with(input))
+            .peekable();
 
-    // TODO: highlight text
-    let mut prefix = "Available engines: ".to_string();
-    prefix.push_str(&avail.join(" "));
-    Some(prefix)
+        avail.peek()?; // thanks clippy
+        Some(avail.map(|x| x.as_str()).collect::<Vec<&str>>())
+    }
 }
 
 pub fn fuzzy() {
@@ -33,6 +41,7 @@ pub fn fuzzy() {
     let mut stdout = stdout().into_raw_mode().unwrap();
 
     let mut input = String::new();
+    let engines = Engines::new();
 
     write!(
         stdout,
@@ -67,8 +76,11 @@ pub fn fuzzy() {
         )
         .unwrap();
 
-        if let Some(prefix) = get_engines(&input) {
-            writeln!(stdout, "{}{}", termion::cursor::Goto(1, 2), prefix).unwrap()
+        if let Some(avail) = engines.filter(&input) {
+            // TODO: highlight text
+            let mut text = "Available engines: ".to_string();
+            text.push_str(&avail.join(" "));
+            writeln!(stdout, "{}{}", termion::cursor::Goto(1, 2), text).unwrap();
         }
         stdout.flush().unwrap();
     }
