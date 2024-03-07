@@ -112,6 +112,7 @@ impl Engines {
                     // i do this weird double owning because returning static str seems sus to me,
                     // but what do i know?
                     clear(&mut stdout);
+                    writeln!(stdout, "{}", termion::cursor::Show).unwrap();
                     let first = &self.filter(&input)?.first()?.to_owned();
                     return Some(first.to_string());
                 }
