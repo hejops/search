@@ -20,6 +20,13 @@ pub struct SearchEngine {
 }
 
 impl SearchEngine {
+    pub fn from_str(line: &str) -> Result<Self, String> {
+        let mut parts = line.split('\t').map(|s| s.to_string());
+        let name = parts.next().ok_or(format!("line has no name: {line}"))?;
+        let url_fragment = parts.next().ok_or(format!("line has no url: {line}"))?;
+        Ok(Self { name, url_fragment })
+    }
+
     pub fn build_url(
         &self,
         query: &str,
@@ -57,21 +64,12 @@ impl Engines {
             }
         };
 
-        let mut engines = vec![];
-
-        // TODO: return as iterator, not vec
-        for line in contents
+        let engines = contents
             .lines()
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        {
-            let mut parts = line.split('\t').map(|s| s.to_string());
-            let name = parts.next().ok_or(format!("line has no name: {line}"))?;
-            let url = parts.next().ok_or(format!("line has no url: {line}"))?;
-            engines.push(SearchEngine {
-                name,
-                url_fragment: url,
-            });
-        }
+            .map(SearchEngine::from_str)
+            .filter_map(|e| e.ok())
+            .collect();
 
         Ok(Engines { engines })
     }
