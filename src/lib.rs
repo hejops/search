@@ -2,7 +2,7 @@
 //!
 //! Usage:
 //! ```sh
-//! search <engine> <query>
+//! search [engine] [query]
 //! ```
 //!
 //! A file at `~/.config/search_engines` is required. This file must be
@@ -22,10 +22,11 @@
 //!
 //! `xdg-open` will be called on the resulting URL.
 
-extern crate termion;
+// extern crate termion;
 
 pub mod engines;
 use std::env::Args;
+use std::error::Error;
 use std::io;
 use std::io::Stdout;
 use std::io::Write;
@@ -34,8 +35,6 @@ use std::ops::Not;
 use termion::raw::RawTerminal;
 
 use crate::engines::Engines;
-
-// https://github.com/redox-os/termion/blob/master/examples/keys.rs
 
 pub fn print_usage(err: &str) {
     println!(
@@ -80,7 +79,13 @@ impl SearchArgs {
 
 //}}}
 
-pub fn launch(url: &str) { let _ = std::process::Command::new("xdg-open").arg(url).spawn(); }
+pub fn launch(url: &str) -> Result<(), Box<dyn Error>> {
+    std::process::Command::new("xdg-open")
+        .arg(url)
+        .spawn()?
+        .wait()?;
+    Ok(())
+}
 
 /// Read a single line of user input, returning None if input was empty
 pub fn get_input(v: &str) -> Option<String> {
@@ -90,6 +95,8 @@ pub fn get_input(v: &str) -> Option<String> {
     result = result.trim().to_string();
     result.is_empty().not().then_some(result)
 }
+
+// https://github.com/redox-os/termion/blob/master/examples/keys.rs
 
 /// Clear entire screen and place cursor at (1,1)
 fn clear(stdout: &mut RawTerminal<Stdout>) {
