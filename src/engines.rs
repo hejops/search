@@ -109,11 +109,11 @@ impl Engines {
                 Key::Char('\n') => {
                     // i do this weird double owning because returning static str seems sus to me,
                     // but what do i know?
-                    (!input.trim().is_empty()).then(|| {
+                    // note: `then` requires closure, where ? cannot be used
+                    return (!input.trim().is_empty()).then_some({
                         clear(&mut stdout);
                         writeln!(stdout, "{}", termion::cursor::Show).unwrap();
-                        let first = &self.filter(&input)?.first()?.to_owned();
-                        Some(first.to_string())
+                        self.filter(&input)?.first()?.to_string()
                     });
                 }
                 Key::Esc | Key::Char('q') => break,
