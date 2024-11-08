@@ -107,8 +107,6 @@ impl Engines {
         for c in stdin.keys() {
             match c.unwrap() {
                 Key::Char('\n') => {
-                    // i do this weird double owning because returning static str seems sus to me,
-                    // but what do i know?
                     // note: `then` requires closure, where ? cannot be used
                     return (!input.trim().is_empty()).then_some({
                         clear(&mut stdout);
