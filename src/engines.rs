@@ -114,7 +114,7 @@ impl Engines {
                         self.filter(&input)?.first()?.to_string()
                     });
                 }
-                Key::Esc | Key::Char('q') => break,
+                Key::Esc => break,
                 Key::Char(c) => input.push(c),
                 Key::Backspace => {
                     input.pop();
